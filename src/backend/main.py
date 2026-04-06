@@ -91,3 +91,16 @@ async def health():
 @app.get("/events")
 async def get_events():
     return {"events": recent_events_cache}
+
+# FRONTEND: Serve Next.js static export
+# Check if frontend exists, then mount it
+FRONTEND_PATH = "src/frontend/out"
+if os.path.exists(FRONTEND_PATH):
+    app.mount("/", StaticFiles(directory=FRONTEND_PATH, html=True), name="static")
+
+    # Catch-all for Next.js routing (Refresh fix)
+    @app.exception_handler(404)
+    async def not_found_handler(request, exc):
+        return FileResponse(os.path.join(FRONTEND_PATH, "index.html"))
+else:
+    logger.warning(f"Frontend path {FRONTEND_PATH} NOT found. UI will not be served.")
