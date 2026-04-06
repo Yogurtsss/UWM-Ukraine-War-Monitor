@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from typing import List, Dict, Any
 import json
 import logging
@@ -69,7 +71,7 @@ async def ingest_data(data: Dict[str, Any], x_api_key: str = Header(None)):
     if not events:
         return {"status": "ignored", "reason": "empty_batch"}
 
-    # Update cache (simple logic: keep last 500)
+    # Update cache (keep last 500)
     global recent_events_cache
     recent_events_cache = (events + recent_events_cache)[:500]
     
@@ -84,7 +86,19 @@ async def ingest_data(data: Dict[str, Any], x_api_key: str = Header(None)):
 async def health():
     return {"status": "live", "clients": len(manager.active), "cached": len(recent_events_cache)}
 
-# For Next.js to pull initial state
 @app.get("/api/events")
 async def get_events():
     return {"events": recent_events_cache}
+
+# FRONTEND: Serve Next.js static export
+# Check if frontend exists, then mount it
+FRONTEND_PATH = "src/frontend/out"
+if os.path.exists(FRONTEND_PATH):
+    app.mount("/", StaticFiles(directory=FRONTEND_PATH, html=True), name="static")
+
+    # Catch-all for Next.js routing (Refresh fix)
+    @app.exception_handler(404)
+    async def not_found_handler(request, exc):
+        return FileResponse(os.path.join(FRONTEND_PATH, "index.html"))
+else:
+    logger.warning(f"Frontend path {FRONTEND_PATH} NOT found. UI will not be served.")

@@ -1,24 +1,23 @@
 # Railway Cloud Dockerfile: Frontend + Relay Backend
-FROM nikolaik/python-nodejs:python3.11-nodejs20
+FROM python:3.11-slim
+
+# Install system dependencies and Node.js for frontend build
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# 1. Install dependencies
-COPY requirements.txt ./
+# Copy requirement files first for better caching
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY package.json package-lock.json ./
-RUN npm install
-
-# 2. Build Frontend
-# (Assuming Next.js is in src/frontend)
-COPY src/frontend/package.json src/frontend/package-lock.json ./src/frontend/
-RUN cd src/frontend && npm install --legacy-peer-deps
-
+# Copy the entire project
 COPY . .
 
-# Build the Next.js app
-RUN cd src/frontend && npm run build
 
 # 3. Expose the port (Railway provides $PORT)
 EXPOSE 8000
