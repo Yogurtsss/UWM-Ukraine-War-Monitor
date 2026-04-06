@@ -60,6 +60,7 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 @app.post("/api/ingest")
+@app.post("/ingest")
 async def ingest_data(data: Dict[str, Any], x_api_key: str = Header(None)):
     """The secure endpoint for the Home Engine to push data."""
     if x_api_key != INGEST_API_KEY:
@@ -87,5 +88,6 @@ async def health():
     return {"status": "live", "clients": len(manager.active), "cached": len(recent_events_cache)}
 
 @app.get("/api/events")
+@app.get("/events")
 async def get_events():
     return {"events": recent_events_cache}
