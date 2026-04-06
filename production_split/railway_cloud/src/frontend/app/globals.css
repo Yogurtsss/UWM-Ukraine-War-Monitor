@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-body bg-background text-foreground overflow-hidden h-screen w-screen;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.mono { font-family: 'Roboto Mono', monospace; }
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+::-webkit-scrollbar-thumb { background: #424754; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #adc6ff; }
+
+.glass-panel {
+    background-color: rgba(28, 32, 41, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(66, 71, 84, 0.15);
+}
+
+.scanline-overlay {
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+}
+
+.threat-gauge-arc {
+    stroke-dasharray: 100, 100;
+    stroke-dashoffset: 25;
+    transition: stroke-dashoffset 1s ease-out;
+}
+
+/* MapLibre popup override */
+.maplibregl-popup-content {
+  background: #111827 !important;
+  border: 1px solid var(--panel-border) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+  color: #e5e7eb !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.tactical-popup .maplibregl-popup-content {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-popup-tip { display: none !important; }
+.maplibregl-ctrl-attrib { display: none !important; }
+
+/* Alerts Pulse */
+.ping-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+    display: inline-block;
+    animation: marquee 30s linear infinite;
+}
+.animate-marquee:hover {
+    animation-play-state: paused;
+}
+
+@keyframes strategic-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8), inset 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0), inset 0 0 10px 2px rgba(239, 68, 68, 0.2); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), inset 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.strategic-strike-pulse {
+  border: 1px solid #ef4444 !important;
+  border-radius: 4px !important;
+  animation: strategic-pulse 1.5s infinite !important;
+  z-index: 1000 !important;
+}

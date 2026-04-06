@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+httpx
+beautifulsoup4
+pydantic
+sqlalchemy
+psycopg2-binary
+redis
+celery
+langchain
+langchain-openai
+langchain-anthropic
+python-dotenv
+websockets
+apscheduler
+langchain-groq
+beautifulsoup4==4.12.3

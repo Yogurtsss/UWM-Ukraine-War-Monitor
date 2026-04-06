@@ -1,0 +1,14 @@
+{
+  "name": "uwm-monorepo",
+  "version": "1.0.0",
+  "scripts": {
+    "railway:build": "cd src/frontend && npm install --legacy-peer-deps && npm run build",
+    "railway:start": "concurrently \"PYTHONPATH=. python3 -m uvicorn src.backend.main:app --host 0.0.0.0 --port 8000\" \"cd src/frontend && npm start\"",
+    "start": "npm run railway:start",
+    "build": "npm run railway:build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "date-fns": "^4.1.0"
+  }
+}

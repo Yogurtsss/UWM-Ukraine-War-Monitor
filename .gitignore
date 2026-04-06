@@ -1,0 +1,19 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.*.local
+__pycache__/
+*.pyc
+*.pyo
+venv/
+env/
+.venv/
+dist/
+build/
+.DS_Store
+data/*.json
+!data/.gitkeep
+f:\Python\UWM–Ukraine War Monitor\data\events_cache.json
+f:\Python\UWM–Ukraine War Monitor\src\frontend\.next/
+f:\Python\UWM–Ukraine War Monitor\src\frontend\node_modules/
