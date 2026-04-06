@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="UWM Relay Server", version="2.0")
 
+@app.get("/")
+async def root():
+    return {"status": "UWM Relay Online", "author": "Antigravity", "time": datetime.utcnow().isoformat()}
+
 # SECURITY: Secret key for ingest (Must match in Home Engine)
 INGEST_API_KEY = os.getenv("INGEST_API_KEY", "uwm_default_secret_key_change_me")
 
