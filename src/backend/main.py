@@ -92,6 +92,23 @@ async def health():
 async def get_events():
     return {"events": recent_events_cache}
 
+@app.get("/api/map/frontline.json")
+async def get_frontline():
+    """Proxy for DeepState GeoJSON data for the map with browser identity."""
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.get("https://deepstatemap.live/api/history/1/geojson", headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data
+            else:
+                return JSONResponse(status_code=resp.status_code, content={"error": f"Remote API failed: {resp.status_code}"})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 # FRONTEND: Serve Next.js static export
 # Check if frontend exists, then mount it
 FRONTEND_PATH = "src/frontend/out"

@@ -2,8 +2,24 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/",
+      "destination": "/src/frontend/out/index.html"
+    },
+    {
+      "source": "/_next/(.*)",
+      "destination": "/src/frontend/out/_next/$1"
+    },
+    {
+      "source": "/icons/(.*)",
+      "destination": "/src/frontend/out/icons/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/src/frontend/out/$1"
     }
   ]
 }
