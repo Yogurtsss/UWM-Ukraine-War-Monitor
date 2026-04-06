@@ -4,6 +4,3 @@ python-multipart
 websockets
 python-dotenv
 httpx
-
-
-  
