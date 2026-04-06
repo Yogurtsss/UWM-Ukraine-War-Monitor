@@ -1,4 +1,3 @@
-# Railway Cloud Dockerfile: Frontend + Relay Backend
 FROM python:3.11-slim
 
 # Install system dependencies and Node.js for frontend build
@@ -18,11 +17,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire project
 COPY . .
 
+# Build the Frontend
+WORKDIR /app/src/frontend
+RUN npm install
+RUN npm run build
 
-# 3. Expose the port (Railway provides $PORT)
-EXPOSE 8000
+# Back to root
+WORKDIR /app
 
-# 4. Start the Relay server
-# Note: Next.js frontend is assumed to be started concurrently or as static files.
-# We'll stick to 'concurrently' to ensure the user's current Next.js structure works.
-CMD ["npm", "run", "railway:start"]
+# Set host and port
+ENV PORT=8080
+ENV HOST=0.0.0.0
+
+# Start the Relay Server
+CMD exec uvicorn src.backend.main:app --host 0.0.0.0 --port $PORT
