@@ -165,7 +165,9 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
 
       const isStrategicStrike = ev.is_strategic || ["energy_infrastructure", "air_base", "naval_base", "nuclear_site", "missile_infrastructure", "power_plant", "radar_station", "command_center", "factory"].includes(ev.type);
       const pulseClass = isStrategicStrike ? 'strategic-strike-pulse' : (ev.type === "strike" || ev.type === "bombing" ? "strike-pulse" : "");
-
+      
+      const isVisible = activeLayers.includes(ev.type) || (ev.is_strategic && activeLayers.includes("strikes")) || (ev.type === "strike" && activeLayers.includes("strikes"));
+      
       if (!markersRef.current[ev.id]) {
         const el = document.createElement("div");
         el.className = "uwm-marker-container";
@@ -268,7 +270,7 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
 
         markersRef.current[ev.id] = marker;
       } else {
-        // Update existing marker pulse class in real-time
+        // Update existing marker pulse class and visibility in real-time
         const m = markersRef.current[ev.id];
         const innerDiv = m.getElement().querySelector('div');
         if (innerDiv) {
@@ -276,9 +278,22 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
           else innerDiv.classList.remove('strategic-strike-pulse');
         }
       }
+
+      // Final visibility filter
+      if (markersRef.current[ev.id]) {
+        markersRef.current[ev.id].getElement().style.display = isVisible ? "block" : "none";
+      }
     });
 
     if (map) {
+      // Toggle Frontline Layers
+      const showFrontline = activeLayers.includes("frontline");
+      if (map.getLayer("frontline-fill")) {
+        map.setLayoutProperty("frontline-fill", "visibility", showFrontline ? "visible" : "none");
+      }
+      if (map.getLayer("frontline-outline")) {
+        map.setLayoutProperty("frontline-outline", "visibility", showFrontline ? "visible" : "none");
+      }
       events.forEach(ev => {
         if (ev.type === "frontline_update" && map.getSource("frontline")) {
            (map.getSource("frontline") as maplibregl.GeoJSONSource).setData(FRONTLINE_GEOJSON_URL);
@@ -307,7 +322,7 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         }
       });
     }
-  }, [events, lang]);
+  }, [events, lang, activeLayers]);
 
   return (
     <div className="w-full h-full relative">
