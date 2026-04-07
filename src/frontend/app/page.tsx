@@ -94,11 +94,11 @@ export default function Home() {
   const connectWs = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
     
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "uwm-engine.up.railway.app";
     const wsProto = typeof window !== "undefined" && window.location.protocol === "https:" ? "wss" : "ws";
+    const wsHost = typeof window !== "undefined" ? window.location.host : "127.0.0.1:3000";
     
-    // Connect directly to the tactical relay socket
-    let wsUrl = `${wsProto}://${backendUrl.replace(/^https?:\/\//, "")}/ws`;
+    // Attempt local WebSocket (limited support on Vercel)
+    let wsUrl = `${wsProto}://${wsHost}/ws`;
     
     console.log(`[WS] Connecting to ${wsUrl}`);
     const socket = new WebSocket(wsUrl);
@@ -162,12 +162,39 @@ export default function Home() {
     setThreatScore(parseFloat((1.0 + dynamicPart).toFixed(1)));
   }, [events]);
 
+  const pollEvents = useCallback(async () => {
+    try {
+      const resp = await fetch('/api/events');
+      if (resp.ok) {
+        const data = await resp.json();
+        const incoming: UWMEvent[] = data.events ?? [];
+        if (incoming.length > 0) {
+          setEvents(incoming);
+          setWsStatus("live"); // Fake it till we make it
+        }
+      }
+    } catch (err) {
+      console.error("Polling error:", err);
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     const timer = setInterval(() => setCurrTime(new Date()), 1000);
+    
+    // Initial fetch
+    pollEvents();
+    
+    // Long polling fallback for Vercel
+    const pollingTimer = setInterval(() => {
+      if (wsStatus !== "live" || ws.current?.readyState !== WebSocket.OPEN) {
+        pollEvents();
+      }
+    }, 5000);
+
     connectWs();
     
-    const statsUrl = "https://uwm-engine.up.railway.app/api/stats/missiles";
+    const statsUrl = '/api/stats/missiles';
 
     fetch(statsUrl)
       .then(res => res.json())
