@@ -111,7 +111,7 @@ async def get_frontline():
     """Returns the cached frontline GeoJSON, preventing 404s and proxy issues."""
     return frontline_cache
 
-@app.get("/api/stats/missiles")
+@app.get("/api/v2/stats")
 async def get_missile_stats():
     # Identify all active kinetic event types
     kinetic_types = ["strike", "strike_or_fire", "bombing", "explosion"]
