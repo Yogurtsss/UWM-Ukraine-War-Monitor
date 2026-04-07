@@ -69,17 +69,24 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         paint: {
           "fill-color": [
             "case",
+            // 1. Occupied in 2014 (Crimea/ORDLO)
             ["any", 
-              ["==", ["get", "name"], "geoJSON.territories.crimea"],
-              ["==", ["get", "name"], "geoJSON.territories.ordlo"]
-            ], "#880e4f", // 2014 Occupation (Dark Red/Purple)
-            ["==", ["get", "name"], "geoJSON.status.occupied"], "#a52714", // 2022 Occupation (Red)
-            ["any",
-              ["==", ["get", "name"], "geoJSON.status.dismissed"],
-              ["==", ["get", "name"], "geoJSON.status.dismissed_at"]
-            ], "#3b82f6", // Liberated (Blue/Cyan)
-            ["==", ["get", "name"], "geoJSON.status.contested"], "#4b5563", // Contested (Gray)
-            "rgba(255, 255, 255, 0.05)" // Default
+              [">=", ["index-of", "geoJSON.territories.crimea", ["get", "name"]], 0],
+              [">=", ["index-of", "geoJSON.territories.ordlo", ["get", "name"]], 0]
+            ], "#880e4f", // Dark Red/Bordeaux (DeepState original for 2014)
+            
+            // 2. Occupied in 2022 (Main Front)
+            [">=", ["index-of", "geoJSON.status.occupied", ["get", "name"]], 0], "#a52714", // Tactical Red
+            
+            // 3. Liberated by Ukraine (User wants Blue/Cyan)
+            ["any", 
+              [">=", ["index-of", "geoJSON.status.dismissed", ["get", "name"]], 0],
+              [">=", ["index-of", "geoJSON.status.dismissed_at", ["get", "name"]], 0]
+            ], "#3b82f6", // Tactical Blue/Cyan
+            
+            // Fallback to official DeepState color if properties exist, else gray
+            ["has", "fill"], ["get", "fill"],
+            "#4b5563" // Default Contested/Unknown
           ],
           "fill-opacity": 0.45
         }
@@ -101,9 +108,10 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         if (!e.features?.length) return;
         const feat = e.features[0];
         const props = feat.properties || {};
-        const typeDesc = props.name === "geoJSON.territories.crimea" || props.name === "geoJSON.territories.ordlo" ? "Occupied (2014)" : 
-                         props.name === "geoJSON.status.occupied" ? "Occupied (2022)" :
-                         props.name === "geoJSON.status.dismissed" || props.name === "geoJSON.status.dismissed_at" ? "Liberated" : "Military Zone";
+        const nameStr = props.name || "";
+        const typeDesc = nameStr.includes("geoJSON.territories.crimea") || nameStr.includes("geoJSON.territories.ordlo") ? "Occupied (2014)" : 
+                         nameStr.includes("geoJSON.status.occupied") ? "Occupied (2022)" :
+                         nameStr.includes("geoJSON.status.dismissed") || nameStr.includes("geoJSON.status.dismissed_at") ? "Liberated territory" : "Live Tactical Zone";
         
         const displayName = props.name || typeDesc;
 
