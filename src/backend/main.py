@@ -106,6 +106,11 @@ async def ingest_map(request: Request):
     logger.info(f"Ingested fresh frontline GeoJSON from home.")
     return {"status": "ok"}
 
+@app.get("/api/events")
+async def get_events():
+    """Returns the cached events for polling-based updates on Vercel-only deploy."""
+    return recent_events_cache
+
 @app.get("/api/map/frontline.json")
 async def get_frontline():
     """Returns the cached frontline GeoJSON, preventing 404s and proxy issues."""
