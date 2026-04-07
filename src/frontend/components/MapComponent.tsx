@@ -68,15 +68,20 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         source: "frontline",
         paint: {
           "fill-color": [
-            "match",
-            ["get", "type"],
-            "liberated", "#3b82f6",
-            "occupied", "#991b1b",
-            "occupied-2014", "#450a0a",
-            "contested", "#4b5563",
-            "rgba(255, 255, 255, 0.1)"
+            "case",
+            ["any", 
+              ["==", ["get", "name"], "geoJSON.territories.crimea"],
+              ["==", ["get", "name"], "geoJSON.territories.ordlo"]
+            ], "#880e4f", // 2014 Occupation (Dark Red/Purple)
+            ["==", ["get", "name"], "geoJSON.status.occupied"], "#a52714", // 2022 Occupation (Red)
+            ["any",
+              ["==", ["get", "name"], "geoJSON.status.dismissed"],
+              ["==", ["get", "name"], "geoJSON.status.dismissed_at"]
+            ], "#3b82f6", // Liberated (Blue/Cyan)
+            ["==", ["get", "name"], "geoJSON.status.contested"], "#4b5563", // Contested (Gray)
+            "rgba(255, 255, 255, 0.05)" // Default
           ],
-          "fill-opacity": 0.35
+          "fill-opacity": 0.45
         }
       });
 
@@ -96,9 +101,9 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         if (!e.features?.length) return;
         const feat = e.features[0];
         const props = feat.properties || {};
-        const typeDesc = props.type === "liberated" ? "Liberated" : 
-                         props.type === "occupied" ? "Russian Occupied (2022)" :
-                         props.type === "occupied-2014" ? "Russian Occupied (2014)" : "Contested";
+        const typeDesc = props.name === "geoJSON.territories.crimea" || props.name === "geoJSON.territories.ordlo" ? "Occupied (2014)" : 
+                         props.name === "geoJSON.status.occupied" ? "Occupied (2022)" :
+                         props.name === "geoJSON.status.dismissed" || props.name === "geoJSON.status.dismissed_at" ? "Liberated" : "Military Zone";
         
         const displayName = props.name || typeDesc;
 
