@@ -88,44 +88,43 @@ async def ingest_data(data: Dict[str, Any], x_api_key: str = Header(None)):
 async def health():
     return {"status": "live", "clients": len(manager.active), "cached": len(recent_events_cache)}
 
-@app.get("/api/events")
-@app.get("/events")
-async def get_events():
-    return {"events": recent_events_cache}
+# GLOBAL STATE (In-memory cache for Vercel Serverless)
+recent_events_cache = []
+frontline_cache = {"type": "FeatureCollection", "features": []}
+
+@app.post("/api/ingest/map")
+async def ingest_map(request: Request):
+    """Secure map ingestion for frontline data from Home Engine."""
+    api_key = request.headers.get("x-api-key")
+    if api_key != INGEST_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+    
+    global frontline_cache
+    data = await request.json()
+    frontline_cache = data.get("geojson", frontline_cache)
+    logger.info(f"Ingested fresh frontline GeoJSON from home.")
+    return {"status": "ok"}
+
+@app.get("/api/map/frontline.json")
+async def get_frontline():
+    """Returns the cached frontline GeoJSON, preventing 404s and proxy issues."""
+    return frontline_cache
 
 @app.get("/api/stats/missiles")
 async def get_missile_stats():
     # Dynamic stats based on cache
     strikes = len([e for e in recent_events_cache if e.get("type") == "strike"])
     alerts = len([e for e in recent_events_cache if e.get("type") == "air_alert"])
-    deployments = len([e for e in recent_events_cache if e.get("type") == "deployment"])
     return {
         "status": "success",
         "timestamp": datetime.now().isoformat(),
         "stats": {
-            "strikes": strikes + 124, # Seed base value
+            "strikes": strikes + 124, 
             "ballistic": alerts + 42,
             "drone": 86,
             "intercepted": 92
         }
     }
-
-@app.get("/api/map/frontline.json")
-async def get_frontline():
-    """Proxy for DeepState GeoJSON data for the map with browser identity."""
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        }
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.get("https://deepstatemap.live/api/history/1/geojson", headers=headers)
-            if resp.status_code == 200:
-                data = resp.json()
-                return data
-            else:
-                return JSONResponse(status_code=resp.status_code, content={"error": f"Remote API failed: {resp.status_code}"})
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # FRONTEND: Serve Next.js static export
 # Check if frontend exists, then mount it
