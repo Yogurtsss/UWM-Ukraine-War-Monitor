@@ -104,10 +104,12 @@ export default function Home() {
     const socket = new WebSocket(wsUrl);
     socket.onopen = () => setWsStatus("live");
     socket.onclose = () => {
-      setWsStatus("offline");
-      setTimeout(connectWs, 5000);
+      // Don't set offline on close, let polling be the source of truth
+      setTimeout(connectWs, 10000); // Wait longer before retry
     };
-    socket.onerror = () => setWsStatus("offline");
+    socket.onerror = () => {
+      // Background error, no need to alert if polling is up
+    };
     socket.onmessage = (msg) => {
       try {
         const data = JSON.parse(msg.data);
@@ -173,6 +175,8 @@ export default function Home() {
       }
     } catch (err) {
       console.error("Polling error:", err);
+      // Actual server failure/network issue
+      setWsStatus("offline");
     }
   }, []);
 
