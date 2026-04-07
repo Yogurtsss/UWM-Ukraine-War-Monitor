@@ -202,9 +202,9 @@ export default function Home() {
 
     connectWs();
     
-    const statsUrl = '/api/stats/missiles';
+    const statsUrl = `/api/stats/missiles?t=${Date.now()}`;
 
-    fetch(statsUrl)
+    fetch(statsUrl, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => setMissileStats(data))
       .catch((err) => console.error("Failed to fetch missile stats:", err));
