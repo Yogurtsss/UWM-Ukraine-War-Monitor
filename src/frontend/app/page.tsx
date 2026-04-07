@@ -490,27 +490,33 @@ export default function Home() {
                <span className="text-[8px] text-gray-500 font-mono">LIVE T-30D</span>
             </div>
           </div>
-          <div className="flex-1 p-2 min-h-0 flex flex-col justify-end gap-1">
-             <div className="flex-1 min-h-0 -ml-8 mt-2">
+          <div className="flex-1 p-2 flex flex-col justify-end min-h-[140px]">
+             {missileStats && missileStats.history ? (
+               <div className="w-full h-[110px] -ml-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={missileStats?.history || []}>
+                  <BarChart data={missileStats.history}>
                     <XAxis 
                       dataKey="date" 
                       axisLine={false} 
                       tickLine={false} 
                       tick={{fontSize: 9, fill: '#8c909f', fontFamily: 'monospace'}}
-                      interval={2}
+                      interval={0}
                     />
                     <YAxis hide domain={[0, 'auto']} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#1c2029', border: '1px solid #31353f', fontSize: '11px', borderRadius: '4px' }}
-                      itemStyle={{ padding: '0px' }}
+                      itemStyle={{ padding: '2px 0' }}
                     />
-                    <Bar dataKey="alerts" name={t.alerts_count} stackId="a" fill="#93000a" fillOpacity={0.8} radius={[1, 1, 0, 0]} />
-                    <Bar dataKey="strikes" name={t.strikes_count} stackId="a" fill="#ffb4ab" radius={[1, 1, 0, 0]} />
+                    <Bar dataKey="alerts" name={t.alerts_count} stackId="a" fill="#ef4444" fillOpacity={0.6} radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="strikes" name={t.strikes_count} stackId="a" fill="#fbbf24" radius={[2, 2, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+             ) : (
+                <div className="flex-1 flex items-center justify-center text-[10px] text-gray-600 mono animate-pulse">
+                  CALIBRATING TACTICAL DATA...
+                </div>
+             )}
               {missileStats && (
               <div className="mt-1 flex justify-between border-t border-white/5 pt-1.5 px-2">
                 <span className="mono text-[10px] text-white uppercase">{t.total_since} {missileStats.since_date || '01.01.2024'}</span>
