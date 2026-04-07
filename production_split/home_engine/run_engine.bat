@@ -1,35 +1,44 @@
-@echo on
-:: DEBUG MODE ACTIVATED
-TITLE UWM Home Engine - Debugger
+@echo off
+TITLE UWM Home Engine - DEBUG MODE
+COLOR 0B
 
-echo [DEBUG] Checking for project files...
-if not exist engine_worker.py (
-    echo [ERROR] engine_worker.py not found in this folder!
+cd /d "%~dp0"
+echo [1/3] Searching for Python...
+
+:: Find Python
+set PYTHON_EXE=python
+python --version >nul 2>nul
+if %ERRORLEVEL% neq 0 (
+    for /d %%p in ("%LOCALAPPDATA%\Programs\Python\Python*") do (
+        if exist "%%p\python.exe" (
+            set PYTHON_EXE="%%p\python.exe"
+            goto :FOUND_PYTHON
+        )
+    )
+    echo [ERROR] Python not found!
     pause
     exit /b
 )
 
-:: Use simpler way to find python
-set PYTHON_EXE=python
-python --version 
+:FOUND_PYTHON
+echo [2/3] Cleaning Python Cache and Updating dependencies...
+if exist "__pycache__" rmdir /s /q "__pycache__"
+if exist "src\__pycache__" rmdir /s /q "src\__pycache__"
+
+%PYTHON_EXE% -m pip install -r requirements.txt --quiet
+
+echo [3/3] Starting UWM Home Engine...
+echo ------------------------------------------
+set "PYTHONPATH=%CD%"
+:: Running with -u for unbuffered output
+%PYTHON_EXE% -u engine_worker.py
+
 if %ERRORLEVEL% neq 0 (
-    echo [STATUS] Searching via system check...
-    where python
-    if %ERRORLEVEL% neq 0 (
-        :: Try hardcoded common paths
-        if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" (
-            set PYTHON_EXE="%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
-        )
-    )
+    echo.
+    echo [CRITICAL ERROR] The engine crashed with exit code %ERRORLEVEL%.
+    echo Please copy the error message above and send it to me.
 )
 
-echo [DEBUG] Using Python: %PYTHON_EXE%
-pause
-
-echo [STATUS] Running...
-set "PYTHONPATH=%CD%"
-
-%PYTHON_EXE% engine_worker.py
-@echo -------------------------------------------------------
-echo [DEBUG] Process ended. 
+echo ------------------------------------------
+echo Engine stopped.
 pause

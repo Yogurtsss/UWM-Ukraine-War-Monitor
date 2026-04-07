@@ -91,53 +91,36 @@ export default function Home() {
 
   const t = UI_STRINGS[lang];
 
-  const connectWs = useCallback(() => {
-    if (ws.current?.readyState === WebSocket.OPEN) return;
-    
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    const wsProto = typeof window !== "undefined" && window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = typeof window !== "undefined" ? window.location.host : "127.0.0.1:3000";
-    
-    let wsUrl = `${wsProto}://${wsHost}${WS_URL}`;
-    if (backendUrl) {
-      wsUrl = backendUrl.replace(/^http/, "ws") + WS_URL;
-    }
-    
-    console.log(`[WS] Connecting to ${wsUrl}`);
-    const socket = new WebSocket(wsUrl);
-    socket.onopen = () => setWsStatus("live");
-    socket.onclose = () => {
-      setWsStatus("offline");
-      setTimeout(connectWs, 5000);
-    };
-    socket.onerror = () => setWsStatus("offline");
-    socket.onmessage = (msg) => {
-      try {
-        const data = JSON.parse(msg.data);
-        const incoming: UWMEvent[] = data.events ?? [];
-        if (!incoming.length) return;
-        
-        if (data.source === "cache") {
-          setEvents(incoming);
-        } else {
-          setEvents((prev) => {
-            const merged = [...incoming, ...prev];
-            const unique = [];
-            const seen = new Set();
-            for (const ev of merged) {
-              if (!seen.has(ev.id)) {
-                seen.add(ev.id);
-                unique.push(ev);
-              }
-            }
-            const deployments = unique.filter(e => e.type === "deployment");
-            const others = unique.filter(e => e.type !== "deployment").slice(0, MAX_EVENTS - deployments.length);
-            return [...deployments, ...others];
-          });
+  const fetchEvents = useCallback(async () => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+      const endpoint = `${backendUrl}/api/events`;
+      
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      
+      const data = await res.json();
+      const incoming: UWMEvent[] = data.events ?? [];
+      if (!incoming.length) return;
+      
+      setWsStatus("live");
+      setEvents((prev) => {
+        // Merge strategy: keep latest unique by ID
+        const merged = [...incoming, ...prev];
+        const unique = [];
+        const seen = new Set();
+        for (const ev of merged) {
+          if (!seen.has(ev.id)) {
+            seen.add(ev.id);
+            unique.push(ev);
+          }
         }
-      } catch { }
-    };
-    ws.current = socket;
+        return unique.slice(0, MAX_EVENTS);
+      });
+    } catch (err) {
+      console.error("[Polling] Failed to fetch events:", err);
+      setWsStatus("offline");
+    }
   }, []);
 
   useEffect(() => {
@@ -167,8 +150,12 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    const timer = setInterval(() => setCurrTime(new Date()), 1000);
-    connectWs();
+    const clockTimer = setInterval(() => setCurrTime(new Date()), 1000);
+    
+    // Initial fetch
+    fetchEvents();
+    // Poll every 15 seconds
+    const pollTimer = setInterval(fetchEvents, 15000);
     
     const statsUrl = process.env.NEXT_PUBLIC_BACKEND_URL 
       ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/missiles` 
@@ -180,10 +167,10 @@ export default function Home() {
       .catch((err) => console.error("Failed to fetch missile stats:", err));
 
     return () => {
-      ws.current?.close();
-      clearInterval(timer);
+      clearInterval(clockTimer);
+      clearInterval(pollTimer);
     };
-  }, [connectWs]);
+  }, [fetchEvents]);
 
   if (!mounted) return <div className="bg-black w-screen h-screen" />;
 

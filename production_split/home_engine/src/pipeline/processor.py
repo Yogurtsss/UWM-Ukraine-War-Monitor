@@ -33,19 +33,23 @@ class EventProcessor:
 
     async def enrich_event(self, event: Dict[str, Any]) -> Dict[str, Any]:
         """Use AI to translate and classify the event with global rate limiting."""
-        # We now ALLOW enrichment even if lat/lon exist, to ensure multi-lang translations are added
         content = event.get("content", "")
         if not content:
             return event
             
-        # Skip AI enrichment for high-fidelity tactical markers that are already categorized
+        # Skip AI enrichment for high-fidelity tactical markers
         if event.get("type") in ["energy_infrastructure", "air_base", "naval_base", "nuclear_site", "missile_infrastructure", "power_plant", "radar_station", "command_center"]:
             return event
             
-        # If we already have translations for the CURRENT language set, we COULD skip, 
+        # If we already have translations, skip
         if event.get("translation_ru") and event.get("translation_ua"):
             return event
             
+        # Circuit breaker: If we don't have a valid key, skip
+        api_key = os.getenv("GROQ_API_KEY", "")
+        if not api_key or "gsk_y2v3" in api_key or "your_actual_key" in api_key:
+            return event
+
         async with self.semaphore:
             try:
                 llm = self.router.get_model()
@@ -69,14 +73,14 @@ class EventProcessor:
                 }}
                 """
 
-                # Safe cooldown for TPM limits (6000 TPM is very low)
-                await asyncio.sleep(2.0)
+                # Safe cooldown (Higher for free tier)
+                await asyncio.sleep(0.5)
                 response = await llm.ainvoke([HumanMessage(content=prompt)])
                 
                 text = response.content.strip()
                 import re
                 
-                # Resilient fallback regex extraction for all 3 languages
+                # Resilient fallback regex extraction
                 type_match = re.search(r'"classification"\s*:\s*"([^"]+)"', text)
                 trans_en = re.search(r'"translation_en"\s*:\s*"([^"]+)"', text)
                 trans_ru = re.search(r'"translation_ru"\s*:\s*"([^"]+)"', text)
@@ -90,7 +94,6 @@ class EventProcessor:
                 if trans_ru: event["translation_ru"] = trans_ru.group(1)
                 if trans_ua: event["translation_ua"] = trans_ua.group(1)
                 
-                # Only use valid coordinates
                 if lat_match and lon_match:
                     try:
                         lat, lon = float(lat_match.group(1)), float(lon_match.group(1))
@@ -98,10 +101,9 @@ class EventProcessor:
                             event["lat"] = lat
                             event["lon"] = lon
                     except: pass
-                    
                 if loc_name_match: event["location_name"] = loc_name_match.group(1)
                 
             except Exception as e:
-                logger.warning(f"AI multi-lang enrichment parsing skipped: {e}")
+                logger.warning(f"AI multi-lang enrichment parsing failed: {e}")
                 
         return event

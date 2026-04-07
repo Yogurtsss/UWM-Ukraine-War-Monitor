@@ -1,24 +1,34 @@
 @echo off
-setlocal
+TITLE UWM Cloud Deployer
+COLOR 0B
+
 echo ----------------------------------------------------
-echo [UWM CLOUD] STARTING AUTO-DEPLOY TO GITHUB... 
+echo [UWM CLOUD] PREPARING INDEPENDENT DEPLOYMENT...
 echo ----------------------------------------------------
 
-:: Add all changes
+:: Ensure we are in the correct directory
+cd /d "%~dp0"
+
+:: Initialize fresh git if not exists
+if not exist .git (
+    echo [STATUS] Initializing new Git repository for Cloud...
+    git init
+    git remote add origin https://github.com/Yogurtsss/UWM-Ukraine-War-Monitor.git
+    git branch -M main
+)
+
+echo [UWM] Stage and Commit...
 git add .
+set TIMESTAMP=%DATE% %TIME%
+git commit -m "UWM Cloud Deploy: Full Frontend + Relay @ %TIMESTAMP%"
 
-:: Commit with dynamic message
-set M="UWM Cloud Deploy: Updated Relay Server + Frontend @ %date% %time%"
-git commit -m %M%
-
-:: Push to main
 echo [UWM] Pushing to GitHub (origin main)...
-git push origin main
+git push -f origin main
 
-if %ERRORLEVEL% equ 0 (
-    echo [UWM] SUCCESS: Cloud Deployment complete! 
+if %ERRORLEVEL% neq 0 (
+    echo [UWM] ERROR: Push failed. Check your Git credentials or GitHub Secret Protection.
 ) else (
-    echo [UWM] ERROR: Push failed. Check your Git credentials or network.
+    echo [UWM] SUCCESS: Cloud Deployment complete!
 )
 
 echo ----------------------------------------------------
