@@ -43,7 +43,7 @@ export default function Home() {
   const [currTime, setCurrTime] = useState(new Date());
   const [lang, setLang] = useState<'en' | 'ru' | 'ua'>('en');
   const [activeLayers, setActiveLayers] = useState<string[]>([
-    "frontline", "strikes",
+    "frontline", "strikes", "strike_or_fire",
     "air_base", "naval_base", "power_plant", "nuclear_site", "factory", 
     "energy_infrastructure", "missile_infrastructure", "radar_station", "command_center", "rail"
   ]);
@@ -272,8 +272,8 @@ export default function Home() {
       <nav className="fixed left-0 top-[36px] h-[calc(100%-64px)] z-40 flex flex-col items-center bg-[#1c2029]/85 backdrop-blur-xl w-16 md:w-20 border-r border-white/5 shadow-[0_0_24px_rgba(0,0,0,0.5)]">
         <div className="flex flex-col w-full flex-grow overflow-y-auto">
           <div 
-            onClick={() => toggleLayer("strikes")}
-            className={`flex flex-col items-center justify-center w-full py-4 transition-all cursor-pointer border-l-2 ${activeLayers.includes("strikes") ? 'bg-orange-500/10 text-orange-500 border-orange-500' : 'text-gray-500 border-transparent hover:bg-white/5'}`}
+            onClick={() => toggleLayer("strike_or_fire")}
+            className={`flex flex-col items-center justify-center w-full py-4 transition-all cursor-pointer border-l-2 ${activeLayers.includes("strike_or_fire") ? 'bg-orange-500/10 text-orange-500 border-orange-500' : 'text-gray-500 border-transparent hover:bg-white/5'}`}
           >
             <Flame size={18} />
             <span className="text-[8px] mono mt-1 font-bold">🔥 FIRES</span>
