@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { renderToString } from "react-dom/server";
-import { Zap, ShieldAlert, Crosshair, Plane, Anchor, Radiation, Building2, Droplets, Rocket, Radio, Landmark } from "lucide-react";
+import { Zap, ShieldAlert, Crosshair, Plane, Anchor, Radiation, Building2, Droplets, Rocket, Radio, Landmark, Flame } from "lucide-react";
 
 const FRONTLINE_GEOJSON_URL = "/api/map/frontline.json";
 
@@ -192,9 +192,9 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
       if (isNaN(lat) || isNaN(lon)) return;
 
       const isStrategicStrike = ev.is_strategic || ["energy_infrastructure", "air_base", "naval_base", "nuclear_site", "missile_infrastructure", "power_plant", "radar_station", "command_center", "factory"].includes(ev.type);
-      const pulseClass = isStrategicStrike ? 'strategic-strike-pulse' : (ev.type === "strike" || ev.type === "bombing" ? "strike-pulse" : "");
+      const pulseClass = isStrategicStrike ? 'strategic-strike-pulse' : (ev.type === "strike" || ev.type === "bombing" || ev.type === "strike_or_fire" ? "strike-pulse" : "");
       
-      const isVisible = activeLayers.includes(ev.type) || (ev.is_strategic && activeLayers.includes("strikes")) || (ev.type === "strike" && activeLayers.includes("strikes"));
+      const isVisible = activeLayers.includes(ev.type) || (ev.is_strategic && activeLayers.includes("strikes")) || (["strike", "strike_or_fire", "bombing"].includes(ev.type) && activeLayers.includes("strikes"));
       
       if (!markersRef.current[ev.id]) {
         const el = document.createElement("div");
@@ -210,6 +210,9 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         } else if (ev.type === "combat") {
           color = "#ffffff";
           icon = <Crosshair size={12} color={color} />;
+        } else if (ev.type === "strike_or_fire") {
+          color = "#f97316"; // Orange-Red for fire
+          icon = <Flame size={12} color={color} />;
         } else if (ev.type === "air_base") {
           color = "#38bdf8";
           icon = <Plane size={12} color={color} />;
