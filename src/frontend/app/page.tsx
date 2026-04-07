@@ -505,8 +505,10 @@ export default function Home() {
               </div>
               {missileStats && (
               <div className="mt-1 flex justify-between border-t border-white/5 pt-1.5 px-2">
-                <span className="mono text-[10px] text-white uppercase">{t.total_since} {missileStats.since_date || '---'}</span>
-                <span className="mono text-[10px] text-error font-bold">{missileStats.total_strikes?.toLocaleString() || 0} {t.strikes_count}</span>
+                <span className="mono text-[10px] text-white uppercase">{t.total_since} {missileStats.since_date || '01.01.2024'}</span>
+                <span className="mono text-[10px] text-error font-bold">
+                  { (missileStats.total_strikes || (missileStats.stats?.strikes) || 0).toLocaleString() } {t.strikes_count}
+                </span>
               </div>
               )}
           </div>
