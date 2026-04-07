@@ -94,14 +94,11 @@ export default function Home() {
   const connectWs = useCallback(() => {
     if (ws.current?.readyState === WebSocket.OPEN) return;
     
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "uwm-engine.up.railway.app";
     const wsProto = typeof window !== "undefined" && window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = typeof window !== "undefined" ? window.location.host : "127.0.0.1:3000";
     
-    let wsUrl = `${wsProto}://${wsHost}${WS_URL}`;
-    if (backendUrl) {
-      wsUrl = backendUrl.replace(/^http/, "ws") + WS_URL;
-    }
+    // Connect directly to the tactical relay socket
+    let wsUrl = `${wsProto}://${backendUrl.replace(/^https?:\/\//, "")}/ws`;
     
     console.log(`[WS] Connecting to ${wsUrl}`);
     const socket = new WebSocket(wsUrl);
@@ -170,9 +167,7 @@ export default function Home() {
     const timer = setInterval(() => setCurrTime(new Date()), 1000);
     connectWs();
     
-    const statsUrl = process.env.NEXT_PUBLIC_BACKEND_URL 
-      ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/stats/missiles` 
-      : '/api/stats/missiles';
+    const statsUrl = "https://uwm-engine.up.railway.app/api/stats/missiles";
 
     fetch(statsUrl)
       .then(res => res.json())

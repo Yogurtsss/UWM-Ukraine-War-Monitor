@@ -3,19 +3,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.py"
+      "destination": "https://uwm-engine.up.railway.app/api/$1"
     },
     {
-      "source": "/",
-      "destination": "/src/frontend/out/index.html"
-    },
-    {
-      "source": "/_next/(.*)",
-      "destination": "/src/frontend/out/_next/$1"
-    },
-    {
-      "source": "/icons/(.*)",
-      "destination": "/src/frontend/out/icons/$1"
+      "source": "/ws",
+      "destination": "https://uwm-engine.up.railway.app/ws"
     },
     {
       "source": "/(.*)",

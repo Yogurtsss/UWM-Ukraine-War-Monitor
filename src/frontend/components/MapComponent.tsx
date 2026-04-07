@@ -6,7 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { renderToString } from "react-dom/server";
 import { Zap, ShieldAlert, Crosshair, Plane, Anchor, Radiation, Building2, Droplets, Rocket, Radio, Landmark } from "lucide-react";
 
-const FRONTLINE_GEOJSON_URL = "/api/map/frontline.json";
+const FRONTLINE_GEOJSON_URL = "https://uwm-engine.up.railway.app/api/map/frontline.json";
 
 export interface UWMEvent {
   id: string;
