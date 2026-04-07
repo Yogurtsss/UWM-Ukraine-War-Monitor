@@ -387,9 +387,6 @@ export default function Home() {
               <h2 className="mono text-xs font-bold text-white tracking-widest uppercase">Operational Summary</h2>
               <p className="text-[10px] text-gray-400 mt-1">OSINT System Node: 782-Delta</p>
             </div>
-            <div className={`bg-secondary-container/20 border px-2 py-0.5 rounded ${wsStatus === 'live' ? 'border-secondary/30 text-secondary' : 'border-error/30 text-error'}`}>
-              <span className="mono text-[8px] font-bold">{wsStatus.toUpperCase()}</span>
-            </div>
           </div>
           <div className="h-px bg-white/5 my-2"></div>
           <p className="text-[11px] text-on-surface-variant leading-relaxed">
