@@ -17,10 +17,21 @@ if not exist .git (
     git branch -M main
 )
 
+echo [UWM] Building Frontend Static Assets...
+pushd src\frontend
+call npm install --legacy-peer-deps && call npm run build
+if %ERRORLEVEL% neq 0 (
+    echo [UWM] ERROR: Frontend build failed.
+    popd
+    pause
+    exit /b %ERRORLEVEL%
+)
+popd
+
 echo [UWM] Stage and Commit...
 git add .
 set TIMESTAMP=%DATE% %TIME%
-git commit -m "UWM Cloud Deploy: Full Frontend + Relay @ %TIMESTAMP%"
+git commit -m "UWM Cloud Deploy: Fresh Build + Relay @ %TIMESTAMP%"
 
 echo [UWM] Pushing to GitHub (origin main)...
 git push -f origin main
