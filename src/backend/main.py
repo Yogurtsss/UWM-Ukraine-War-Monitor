@@ -84,6 +84,7 @@ async def ingest_data(data: Dict[str, Any], x_api_key: str = Header(None)):
     logger.info(f"Ingested {len(events)} events from {source}")
     return {"status": "ok", "ingested": len(events)}
 
+@app.get("/api/health")
 @app.get("/health")
 async def health():
     return {"status": "live", "clients": len(manager.active), "cached": len(recent_events_cache)}
