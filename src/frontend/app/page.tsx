@@ -71,21 +71,27 @@ export default function Home() {
       news: "NEWS FEED", social: "SOCIAL MONITOR", missile: "MISSILE / ATTACK COUNTS",
       utc: "UTC", ukr: "UKR", suggest: "Suggest Source", legend: "LEGEND",
       alerts_count: "ALERTS", strikes_count: "STRIKES", total_since: "TOTAL SINCE",
-      active_alert: "Active Alert", strike_warning: "Strike Warning", frontline_shift: "Frontline Shift", threats_icon: "Missile/Drone"
+      active_alert: "Active Alert", strike_warning: "Strike Warning", frontline_shift: "Frontline Shift", threats_icon: "Missile/Drone",
+      live_alert: "Live Alert Stream", active: "ACTIVE", total_strikes: "TOTAL STRIKES", ai_digest: "AI DIGEST", unverified: "UNVERIFIED",
+      waiting_signals: "Waiting for signals...", bandwidth: "Bandwidth", latency: "Latency", deploy_assets: "DEPLOY ASSETS", system_offline: "SYSTEM_OFFLINE", live_system: "LIVE_SYSTEM_ACTIVE"
     },
     ru: {
       threat: "УРОВЕНЬ УГРОЗЫ", threat_stable: "СТАБИЛЬНО", threat_elevated: "ПОВЫШЕН", threat_critical: "КРИТИЧЕСКИЙ",
       news: "НОВОСТИ", social: "СОЦМОНИТОРИНГ", missile: "СТАТИСТИКА АТАК",
       utc: "UTC", ukr: "УКР", suggest: "Предложить источник", legend: "ЛЕГЕНДА",
       alerts_count: "ТРЕВОГ", strikes_count: "УДАРОВ", total_since: "ВСЕГО С",
-      active_alert: "Воздушная тревога", strike_warning: "Угроза удара", frontline_shift: "Изменение фронта", threats_icon: "Ракеты/Дроны"
+      active_alert: "Воздушная тревога", strike_warning: "Угроза удара", frontline_shift: "Изменение фронта", threats_icon: "Ракеты/Дроны",
+      live_alert: "Поток алертов", active: "АКТИВНО", total_strikes: "УДАРОВ ВСЕГО", ai_digest: "AI ДАЙДЖЕСТ", unverified: "НЕ ПОДТВЕРЖДЕНО",
+      waiting_signals: "Ожидание сигналов...", bandwidth: "Поток", latency: "Задержка", deploy_assets: "АКТИВАЦИЯ", system_offline: "СИСТЕМА_ВЫКЛ", live_system: "СИСТЕМА_АКТИВНА"
     },
     ua: {
       threat: "РІВЕНЬ ЗАГРОЗИ", threat_stable: "СТАБІЛЬНО", threat_elevated: "ПІДВИЩЕНО", threat_critical: "КРИТИЧНО",
       news: "НОВИНИ", social: "СОЦМОНІТОРИНГ", missile: "СТАТИСТИКА АТАК",
       utc: "UTC", ukr: "UKR", suggest: "Запропонувати джерело", legend: "ЛЕГЕНДА",
       alerts_count: "ТРИВОГ", strikes_count: "УДАРІВ", total_since: "ВСЬОГО З",
-      active_alert: "Повітряна тривога", strike_warning: "Загроза удару", frontline_shift: "Зміна фронту", threats_icon: "Ракети/Дрони"
+      active_alert: "Повітряна тривога", strike_warning: "Загроза удару", frontline_shift: "Зміна фронту", threats_icon: "Ракети/Дрони",
+      live_alert: "Потік тривог", active: "АКТИВНО", total_strikes: "УДАРІВ ВСЬОГО", ai_digest: "AI ДАЙДЖЕСТ", unverified: "НЕ ПІДТВЕРДЖЕНО",
+      waiting_signals: "Очікування сигналів...", bandwidth: "Потік", latency: "Затримка", deploy_assets: "АКТИВАЦІЯ", system_offline: "СИСТЕМА_ВІДКЛ", live_system: "СИСТЕМА_АКТИВНА"
     }
   };
 
@@ -235,7 +241,7 @@ export default function Home() {
           <div className="flex items-center gap-2 ml-2">
             <span className={`w-2 h-2 rounded-full ${wsStatus === 'live' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
             <span className={`mono text-[9px] tracking-widest px-2 py-0.5 rounded border ${wsStatus === 'live' ? 'text-green-500 bg-green-500/10 border-green-500/20' : 'text-red-500 bg-red-500/10 border-red-500/20'}`}>
-              {wsStatus === 'live' ? 'LIVE_SYSTEM_ACTIVE' : 'SYSTEM_OFFLINE'}
+              {wsStatus === 'live' ? t.live_system : t.system_offline}
             </span>
           </div>
         </div>
@@ -257,7 +263,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <button className="mono text-[11px] tracking-widest text-blue-500 font-bold hover:bg-white/5 transition-colors px-2">DEPLOY ASSETS</button>
+            <button className="mono text-[11px] tracking-widest text-blue-500 font-bold hover:bg-white/5 transition-colors px-2">{t.deploy_assets}</button>
           </div>
         </div>
       </header>
@@ -402,9 +408,9 @@ export default function Home() {
           <div className="p-3 border-b border-white/5 flex justify-between items-center bg-surface-container-high/50">
             <span className="mono text-[10px] font-bold text-white uppercase flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse"></span>
-              Live Alert Stream
+              {t.live_alert}
             </span>
-            <span className="mono text-[9px] text-gray-500">{alertEvents.length} ACTIVE</span>
+            <span className="mono text-[9px] text-gray-500">{alertEvents.length} {t.active}</span>
           </div>
           <div className="flex-grow overflow-y-auto p-2 flex flex-col gap-2">
             {alertEvents.length === 0 ? (
@@ -451,7 +457,7 @@ export default function Home() {
         {/* AI Digest */}
         <div className="w-[300px] shrink-0 glass-panel rounded-lg flex flex-col overflow-hidden border-l-2 border-secondary/20 pointer-events-auto">
           <div className="p-2 border-b border-white/5 bg-surface-container-high/30 flex justify-between">
-            <span className="mono text-[10px] font-bold text-secondary uppercase">AI Digest</span>
+            <span className="mono text-[10px] font-bold text-secondary uppercase">{t.ai_digest}</span>
             <span className="material-symbols-outlined text-[14px] text-secondary">neurology</span>
           </div>
           <div className="p-3 space-y-2 flex-1 overflow-y-auto">
@@ -518,7 +524,7 @@ export default function Home() {
                 <div key={i} className="bg-black/20 p-2 rounded">
                   <div className="flex justify-between items-center mb-1">
                     <span className="mono text-[8px] text-blue-400">{ev.source.substring(0, 15).toUpperCase()}</span>
-                    <span className="mono text-[7px] bg-tertiary-container/30 text-tertiary-container px-1 rounded uppercase">UNVERIFIED</span>
+                    <span className="mono text-[7px] bg-tertiary-container/30 text-tertiary-container px-1 rounded uppercase">{t.unverified}</span>
                   </div>
                   <p className="text-[9px] italic text-on-surface-variant line-clamp-3">"{ (ev as any)[`translation_${lang}`] || ev.content }"</p>
                   <div className="mono text-[7px] text-gray-600 mt-1">{safeTimeAgo(ev.timestamp)}</div>
@@ -584,11 +590,11 @@ export default function Home() {
         
         <div className="hidden md:flex items-center gap-4 ml-auto border-l border-white/10 pl-4 h-full">
            <div className="flex flex-col items-end">
-             <span className="mono text-[8px] text-gray-500 leading-none uppercase">Bandwidth</span>
+             <span className="mono text-[8px] text-gray-500 leading-none uppercase">{t.bandwidth}</span>
              <span className="mono text-[9px] text-green-500 leading-tight">94.2 MB/s</span>
            </div>
            <div className="flex flex-col items-end">
-             <span className="mono text-[8px] text-gray-500 leading-none uppercase">Latency</span>
+             <span className="mono text-[8px] text-gray-500 leading-none uppercase">{t.latency}</span>
              <span className="mono text-[9px] text-blue-400 leading-tight">12ms</span>
            </div>
         </div>

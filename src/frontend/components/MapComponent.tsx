@@ -40,6 +40,8 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Record<string, maplibregl.Marker>>({});
+  const langRef = useRef(lang);
+  useEffect(() => { langRef.current = lang; }, [lang]);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -92,28 +94,27 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         }
       });
 
-      map.addLayer({
-        id: "frontline-outline",
-        type: "line",
-        source: "frontline",
-        paint: {
-          "line-color": "#3b82f6",
-          "line-width": 2,
-          "line-opacity": 0.8
-        }
-      });
-
-      // Interactive labels for frontline regions
+      // 106-118: Click handler with lang support
       map.on("click", "frontline-fill", (e) => {
         if (!e.features?.length) return;
         const feat = e.features[0];
         const props = feat.properties || {};
         const nameStr = props.name || "";
-        const typeDesc = nameStr.includes("geoJSON.territories.crimea") || nameStr.includes("geoJSON.territories.ordlo") ? "Occupied (2014)" : 
-                         nameStr.includes("geoJSON.status.occupied") ? "Occupied (2022)" :
-                         nameStr.includes("geoJSON.status.dismissed") || nameStr.includes("geoJSON.status.dismissed_at") ? "Liberated territory" : "Live Tactical Zone";
         
-        const displayName = props.name || typeDesc;
+        // Parse DeepState name (Format: UA /// EN /// geoJSON.id)
+        const nameParts = nameStr.split(" /// ");
+        let displayName = nameStr;
+        if (nameParts.length >= 2) {
+          displayName = lang === 'ua' ? nameParts[0] : (lang === 'ru' ? nameParts[0] : nameParts[1]);
+        }
+
+        const typeDesc = nameStr.includes("geoJSON.territories.crimea") || nameStr.includes("geoJSON.territories.ordlo") 
+                         ? (lang === 'ua' ? "Окуповано (2014)" : lang === 'ru' ? "Оккупировано (2014)" : "Occupied (2014)") : 
+                         nameStr.includes("geoJSON.status.occupied") 
+                         ? (lang === 'ua' ? "Окуповано (2022)" : lang === 'ru' ? "Оккупировано (2022)" : "Occupied (2022)") :
+                         nameStr.includes("geoJSON.status.dismissed") || nameStr.includes("geoJSON.status.dismissed_at") 
+                        ? (lang === 'ua' ? "Звільнена територія" : lang === 'ru' ? "Освобожденная территория" : "Liberated territory") :
+                        (lang === 'ua' ? "Бойова зона" : lang === 'ru' ? "Боевая зона" : "Live Tactical Zone");
 
         new maplibregl.Popup({ className: 'tactical-popup' })
           .setLngLat(e.lngLat)
@@ -132,8 +133,11 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
               <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">
                 ${lang === 'ua' ? 'Статус території' : lang === 'ru' ? 'Статус территории' : 'Territorial Status'}
               </div>
-              <div style="font-size: 14px; font-weight: 700; color: #fff; line-height: 1.4; margin-bottom: 8px;">
+              <div style="font-size: 14px; font-weight: 700; color: #fff; line-height: 1.4; margin-bottom: 4px;">
                 ${displayName}
+              </div>
+              <div style="font-size: 10px; color: #3b82f6; font-weight: 500; margin-bottom: 8px;">
+                ${typeDesc}
               </div>
               <div style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 6px;"></div>
               <div style="display: flex; align-items: center; gap: 4px;">
@@ -155,7 +159,7 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
     return () => {
       if (map) map.remove();
     };
-  }, [lang]);
+  }, []);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -344,31 +348,31 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
       {/* Map Legend */}
       <div className="absolute bottom-6 right-6 z-10 bg-[#0b0d11]/80 backdrop-blur-md border border-[#1f2937] p-3 rounded-lg shadow-xl pointer-events-none">
         <h4 className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-wider">
-          ${lang === 'ua' ? 'Територіальний статус' : lang === 'ru' ? 'Территориальный статус' : 'Territorial Status'}
+          {lang === 'ua' ? 'Територіальний статус' : lang === 'ru' ? 'Территориальный статус' : 'Territorial Status'}
         </h4>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#3b82f6] opacity-60 rounded-sm"></div>
+            <div className="w-3 h-3 bg-[#3b82f6] opacity-80 rounded-sm"></div>
             <span className="text-[10px] text-gray-200">
-              ${lang === 'ua' ? 'Звільнена територія' : lang === 'ru' ? 'Освобожденная территория' : 'Liberated Territory'}
+              {lang === 'ua' ? 'Звільнена територія' : lang === 'ru' ? 'Освобожденная территория' : 'Liberated Territory'}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#991b1b] opacity-60 rounded-sm"></div>
+            <div className="w-3 h-3 bg-[#a52714] opacity-80 rounded-sm"></div>
             <span className="text-[10px] text-gray-200">
-              ${lang === 'ua' ? 'Окупована (2022)' : lang === 'ru' ? 'Оккупирована (2022)' : 'Occupied (2022)'}
+              {lang === 'ua' ? 'Окупована (2022)' : lang === 'ru' ? 'Оккупирована (2022)' : 'Occupied (2022)'}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#450a0a] opacity-80 rounded-sm"></div>
+            <div className="w-3 h-3 bg-[#880e4f] opacity-80 rounded-sm"></div>
             <span className="text-[10px] text-gray-200">
-              ${lang === 'ua' ? 'Крим / ОРДЛО (2014)' : lang === 'ru' ? 'Крым / ОРДЛО (2014)' : 'Occupied (2014)'}
+              {lang === 'ua' ? 'Крим / ОРДЛО (2014)' : lang === 'ru' ? 'Крым / ОРДЛО (2014)' : 'Occupied (2014)'}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-[#4b5563] opacity-60 rounded-sm"></div>
+            <div className="w-3 h-3 bg-[#4b5563] opacity-80 rounded-sm"></div>
             <span className="text-[10px] text-gray-200">
-              ${lang === 'ua' ? 'Сіра зона' : lang === 'ru' ? 'Серая зона' : 'Contested / Grey Zone'}
+              {lang === 'ua' ? 'Сіра зона' : lang === 'ru' ? 'Серая зона' : 'Contested / Grey Zone'}
             </span>
           </div>
         </div>
