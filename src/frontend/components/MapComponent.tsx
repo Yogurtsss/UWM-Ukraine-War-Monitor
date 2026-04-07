@@ -100,12 +100,23 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         const feat = e.features[0];
         const props = feat.properties || {};
         const nameStr = props.name || "";
+        const cl = langRef.current;
         
         // Parse DeepState name (Format: UA /// EN /// geoJSON.id)
         const nameParts = nameStr.split(" /// ");
         let displayName = nameStr;
         if (nameParts.length >= 2) {
-          displayName = lang === 'ua' ? nameParts[0] : (lang === 'ru' ? nameParts[0] : nameParts[1]);
+          if (cl === 'ua') displayName = nameParts[0];
+          else if (cl === 'en') displayName = nameParts[1];
+          else if (cl === 'ru') displayName = nameParts[0]; // Fallback to UA for RU if not provided
+        } else if (nameStr.includes("///")) {
+           // Handle cases with different spacing
+           const altParts = nameStr.split("///").map((p: string) => p.trim());
+           if (altParts.length >= 2) {
+             if (cl === 'ua') displayName = altParts[0];
+             else if (cl === 'en') displayName = altParts[1];
+             else if (cl === 'ru') displayName = altParts[0];
+           }
         }
 
         const typeDesc = nameStr.includes("geoJSON.territories.crimea") || nameStr.includes("geoJSON.territories.ordlo") 
