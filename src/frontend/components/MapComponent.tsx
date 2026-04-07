@@ -6,6 +6,14 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { renderToString } from "react-dom/server";
 import { Zap, ShieldAlert, Crosshair, Plane, Anchor, Radiation, Building2, Droplets, Rocket, Radio, Landmark, Flame } from "lucide-react";
 
+const TYPE_TRANSLATIONS: Record<string, any> = {
+  strike_or_fire: { en: "Thermal Anomaly / Fire", ru: "Тепловая аномалия / Пожар", ua: "Теплова аномалія / Пожежа" },
+  air_alert: { en: "Air Alert", ru: "Воздушная тревога", ua: "Повітряна тривога" },
+  strike: { en: "Tactical Strike", ru: "Тактический удар", ua: "Тактичний удар" },
+  combat: { en: "Active Combat", ru: "Боевые действия", ua: "Бойові дії" },
+  deployment: { en: "Military Deployment", ru: "Развертывание сил", ua: "Розгортання сил" }
+};
+
 const FRONTLINE_GEOJSON_URL = "/api/map/frontline.json";
 
 export interface UWMEvent {
@@ -176,8 +184,15 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
     const map = mapRef.current;
     if (!map) return;
 
+    // Load from local storage initially to prevent flicker/empty state on Vercel
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('uwm_event_cache') : null;
+    let initialEvents = events;
+    if (stored && events.length === 0) {
+      try { initialEvents = JSON.parse(stored); } catch(e) {}
+    }
+
     // Remove stale markers
-    const currentIds = new Set(events.map((e) => e.id));
+    const currentIds = new Set(initialEvents.map((e) => e.id));
     Object.keys(markersRef.current).forEach((id) => {
       if (!currentIds.has(id)) {
         markersRef.current[id].remove();
@@ -186,7 +201,7 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
     });
 
     // Add/Update markers
-    events.forEach((ev) => {
+    initialEvents.forEach((ev) => {
       const lat = Number(ev.lat);
       const lon = Number(ev.lon);
       if (isNaN(lat) || isNaN(lon)) return;
@@ -212,7 +227,7 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
           icon = <Crosshair size={12} color={color} />;
         } else if (ev.type === "strike_or_fire") {
           color = "#f97316"; // Orange-Red for fire
-          icon = <Flame size={12} color={color} />;
+          icon = <Flame size={20} color={color} />;
         } else if (ev.type === "air_base") {
           color = "#38bdf8";
           icon = <Plane size={12} color={color} />;
@@ -291,7 +306,7 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
                   ${ev.source.substring(0,20)} <span style="color:#ef4444">|</span> ${isStrategicStrike ? 'STRATEGIC HIT' : ev.type.replace('_', ' ')}
                 </div>
                 <div style="font-size: 12px; font-weight: ${isStrategicStrike ? 'bold' : 'normal'}; color: #f3f4f6; line-height: 1.5; text-shadow: 0 1px 2px rgba(0,0,0,0.8);">
-                  ${(ev as any)[`translation_${lang}`] || ev.content}
+                  ${(ev as any)[`translation_${lang}`] || (TYPE_TRANSLATIONS[ev.type] ? TYPE_TRANSLATIONS[ev.type][lang] : null) || ev.content}
                 </div>
                 ${satelliteHtml}
               </div>
@@ -317,43 +332,20 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
     });
 
     if (map) {
-      // Toggle Frontline Layers
-      const showFrontline = activeLayers.includes("frontline");
       if (map.getLayer("frontline-fill")) {
-        map.setLayoutProperty("frontline-fill", "visibility", showFrontline ? "visible" : "none");
+        map.setLayoutProperty("frontline-fill", "visibility", activeLayers.includes("frontline") ? "visible" : "none");
       }
-      if (map.getLayer("frontline-outline")) {
-        map.setLayoutProperty("frontline-outline", "visibility", showFrontline ? "visible" : "none");
-      }
-      events.forEach(ev => {
-        if (ev.type === "frontline_update" && map.getSource("frontline")) {
-           (map.getSource("frontline") as maplibregl.GeoJSONSource).setData(FRONTLINE_GEOJSON_URL);
-        }
-
-        if ((ev.type === "air_alert" || ev.type === "strike") && !markersRef.current[ev.id]) {
-           const isRecent = ev.timestamp ? (Date.now() - new Date(ev.timestamp).getTime()) < 30000 : true;
-           if (isRecent) {
-             let targetLon = ev.lon;
-             let targetLat = ev.lat;
-
-             if (!targetLat || !targetLon) {
-               const contentLower = ev.content.toLowerCase();
-               for (const [city, coords] of Object.entries(CITY_COORDS)) {
-                 if (contentLower.includes(city)) {
-                   [targetLon, targetLat] = coords as [number, number];
-                   break;
-                 }
-               }
-             }
-
-             if (targetLat && targetLon) {
-               animateMissileFlight(map, [targetLon, targetLat], ev.type);
-             }
-           }
-        }
-      });
     }
   }, [events, lang, activeLayers]);
+
+  // 3. Data Sync Logic (Global Events)
+  useEffect(() => {
+    if (events && events.length > 0) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('uwm_event_cache', JSON.stringify(events));
+      }
+    }
+  }, [events]);
 
   return (
     <div className="w-full h-full relative">
