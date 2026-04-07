@@ -209,7 +209,9 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
       const isStrategicStrike = ev.is_strategic || ["energy_infrastructure", "air_base", "naval_base", "nuclear_site", "missile_infrastructure", "power_plant", "radar_station", "command_center", "factory"].includes(ev.type);
       const pulseClass = isStrategicStrike ? 'strategic-strike-pulse' : (ev.type === "strike" || ev.type === "bombing" || ev.type === "strike_or_fire" ? "strike-pulse" : "");
       
-      const isVisible = activeLayers.includes(ev.type) || (ev.is_strategic && activeLayers.includes("strikes")) || (["strike", "strike_or_fire", "bombing"].includes(ev.type) && activeLayers.includes("strikes"));
+      const isVisible = ev.type === "strike_or_fire"
+        ? activeLayers.includes("strike_or_fire")
+        : (activeLayers.includes(ev.type) || (ev.is_strategic && activeLayers.includes("strikes")) || (["strike", "bombing"].includes(ev.type) && activeLayers.includes("strikes")));
       
       if (!markersRef.current[ev.id]) {
         const el = document.createElement("div");
