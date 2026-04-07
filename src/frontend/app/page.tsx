@@ -167,11 +167,9 @@ export default function Home() {
       const resp = await fetch('/api/events');
       if (resp.ok) {
         const data = await resp.json();
-        const incoming: UWMEvent[] = data.events ?? [];
-        if (incoming.length > 0) {
-          setEvents(incoming);
-          setWsStatus("live"); // Fake it till we make it
-        }
+        const incoming: UWMEvent[] = Array.isArray(data) ? data : (data.events ?? []);
+        setEvents(incoming);
+        setWsStatus("live"); 
       }
     } catch (err) {
       console.error("Polling error:", err);
