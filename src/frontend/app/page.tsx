@@ -202,7 +202,7 @@ export default function Home() {
 
     connectWs();
     
-    const statsUrl = `/api/v2/stats?t=${Date.now()}`;
+    const statsUrl = `/api/stats/missiles?t=${Date.now()}`;
 
     fetch(statsUrl, { cache: 'no-store' })
       .then(res => res.json())
