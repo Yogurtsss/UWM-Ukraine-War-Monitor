@@ -7,7 +7,9 @@ import json
 import logging
 import os
 import httpx
-from datetime import datetime
+import asyncio
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -49,6 +51,62 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 recent_events_cache: List[Dict[str, Any]] = []
+frontline_cache = {"type": "FeatureCollection", "features": []}
+
+async def fetch_kyiv_independent_rss():
+    """Background task to fetch news from Kyiv Independent RSS feed."""
+    url = "https://kyivindependent.com/news-archive/rss/"
+    while True:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, timeout=10.0)
+                if response.status_code == 200:
+                    root = ET.fromstring(response.content)
+                    items = root.findall(".//item")
+                    
+                    new_news = []
+                    global recent_events_cache
+                    existing_ids = {e.get("id") for e in recent_events_cache}
+                    
+                    for item in items:
+                        link = item.find("link").text if item.find("link") is not None else ""
+                        event_id = f"rss_ki_{link}"
+                        
+                        if event_id not in existing_ids:
+                            title = item.find("title").text if item.find("title") is not None else ""
+                            pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
+                            description = item.find("description").text if item.find("description") is not None else ""
+                            
+                            # Clean up description (remove HTML if present)
+                            # Simple approach: description might have <p> tags
+                            
+                            import re
+                            clean_description = re.sub('<[^<]+?>', '', description)
+                            
+                            new_news.append({
+                                "id": event_id,
+                                "type": "news",
+                                "source": "Kyiv Independent",
+                                "timestamp": pub_date,
+                                "content": f"{title}\n\n{clean_description}",
+                                "link": link
+                            })
+                    
+                    if new_news:
+                        recent_events_cache = (new_news + recent_events_cache)[:500]
+                        await manager.broadcast(json.dumps({"source": "rss_feed", "events": new_news}))
+                        logger.info(f"Broadcasted {len(new_news)} new RSS items.")
+                else:
+                    logger.warning(f"Failed to fetch RSS: {response.status_code}")
+        except Exception as e:
+            logger.error(f"RSS fetch error: {e}")
+        
+        await asyncio.sleep(300) # Fetch every 5 minutes
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(fetch_kyiv_independent_rss())
+    logger.info("Started background RSS fetch task.")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -89,9 +147,7 @@ async def ingest_data(data: Dict[str, Any], x_api_key: str = Header(None)):
 async def health():
     return {"status": "live", "clients": len(manager.active), "cached": len(recent_events_cache)}
 
-# GLOBAL STATE (In-memory cache for Vercel Serverless)
-recent_events_cache = []
-frontline_cache = {"type": "FeatureCollection", "features": []}
+# GLOBAL STATE handled above
 
 @app.post("/api/ingest/map")
 async def ingest_map(request: Request):
