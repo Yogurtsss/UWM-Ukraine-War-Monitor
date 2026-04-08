@@ -49,6 +49,8 @@ export default function Home() {
   ]);
   const [showUtc, setShowUtc] = useState(false);
   const [isSatModalOpen, setIsSatModalOpen] = useState(false);
+  const [bandwidth, setBandwidth] = useState("94.2");
+  const [latency, setLatency] = useState(12);
   const ws = useRef<WebSocket | null>(null);
 
   const toggleLayer = (layer: string) => {
@@ -228,9 +230,28 @@ export default function Home() {
       .then(data => setMissileStats(data))
       .catch((err) => console.error("Failed to fetch missile stats:", err));
 
+    // Network Metrics Updater
+    const updateMetrics = () => {
+      setLatency(prev => {
+        const jitter = Math.floor(Math.random() * 5) - 2;
+        const next = prev + jitter;
+        return Math.min(32, Math.max(9, next));
+      });
+
+      if ('connection' in navigator) {
+        const conn = (navigator as any).connection;
+        const mbps = conn.downlink || 0;
+        const mBps = (mbps / 8).toFixed(1);
+        setBandwidth(mBps);
+      }
+    };
+    const metricsTimer = setInterval(updateMetrics, 3000);
+
     return () => {
       ws.current?.close();
       clearInterval(timer);
+      clearInterval(pollingTimer);
+      clearInterval(metricsTimer);
     };
   }, [connectWs]);
 
@@ -662,11 +683,11 @@ export default function Home() {
         <div className="hidden md:flex items-center gap-4 ml-auto border-l border-white/10 pl-4 h-full">
            <div className="flex flex-col items-end">
              <span className="mono text-[8px] text-gray-500 leading-none uppercase">{t.bandwidth}</span>
-             <span className="mono text-[9px] text-green-500 leading-tight">94.2 MB/s</span>
+             <span className="mono text-[9px] text-green-500 leading-tight">{bandwidth} MB/s</span>
            </div>
            <div className="flex flex-col items-end">
              <span className="mono text-[8px] text-gray-500 leading-none uppercase">{t.latency}</span>
-             <span className="mono text-[9px] text-blue-400 leading-tight">12ms</span>
+             <span className="mono text-[9px] text-blue-400 leading-tight">{latency}ms</span>
            </div>
         </div>
       </footer>
