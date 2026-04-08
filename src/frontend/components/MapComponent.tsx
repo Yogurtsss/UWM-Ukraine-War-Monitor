@@ -206,6 +206,11 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
       const lon = Number(ev.lon);
       if (isNaN(lat) || isNaN(lon)) return;
 
+      // Handle flight animations for air alerts
+      if (ev.type === "air_alert" && !markersRef.current[ev.id]) {
+        animateMissileFlight(map, [lon, lat], "air_alert");
+      }
+
       const isStrategicStrike = ev.is_strategic || ["energy_infrastructure", "air_base", "naval_base", "nuclear_site", "missile_infrastructure", "power_plant", "radar_station", "command_center", "factory"].includes(ev.type);
       const pulseClass = isStrategicStrike ? 'strategic-strike-pulse' : (ev.type === "strike" || ev.type === "bombing" || ev.type === "strike_or_fire" ? "strike-pulse" : "");
       
@@ -426,27 +431,51 @@ function animateMissileFlight(map: maplibregl.Map, end: [number, number], type: 
   const pointId = `point-${Math.random()}`;
   
   // Calculate arc
-  const steps = 100;
+  const steps = 300; // Smoother and slower for 15 min logic
   const coordinates: [number, number][] = [];
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const currLon = start[0] + (end[0] - start[0]) * t;
     const currLat = start[1] + (end[1] - start[1]) * t;
-    const elevation = Math.sin(Math.PI * t) * 5; // Simulating arc
     coordinates.push([currLon, currLat]);
   }
 
-  const geojson: any = {
+  const routeGeojson: any = {
     type: "Feature",
     geometry: { type: "LineString", coordinates: [] }
   };
 
-  map.addSource(routeId, { type: "geojson", data: geojson });
+  const pointGeojson: any = {
+    type: "FeatureCollection",
+    features: [{
+      type: "Feature",
+      geometry: { type: "Point", coordinates: start }
+    }]
+  };
+
+  map.addSource(routeId, { type: "geojson", data: routeGeojson });
   map.addLayer({
     id: routeId,
     type: "line",
     source: routeId,
-    paint: { "line-color": type === "strike" ? "#ef4444" : "#ff9f1c", "line-width": 2, "line-opacity": 0.6 }
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#ef4444", "line-width": 2, "line-opacity": 0.4, "line-dasharray": [2, 2] }
+  });
+
+  map.addSource(pointId, { type: "geojson", data: pointGeojson });
+  map.addLayer({
+    id: pointId,
+    type: "symbol",
+    source: pointId,
+    layout: {
+      "icon-image": "rocket", // Assuming a rocket icon exists or using fallback circle below
+      "icon-size": 1.5,
+      "icon-rotate": ["get", "bearing"],
+      "icon-rotation-alignment": "map",
+      "text-field": "🚀",
+      "text-size": 16
+    },
+    paint: { "text-color": "#ff0000" }
   });
 
   let step = 0;
@@ -455,11 +484,18 @@ function animateMissileFlight(map: maplibregl.Map, end: [number, number], type: 
       setTimeout(() => {
         if (map.getLayer(routeId)) map.removeLayer(routeId);
         if (map.getSource(routeId)) map.removeSource(routeId);
-      }, 2000);
+        if (map.getLayer(pointId)) map.removeLayer(pointId);
+        if (map.getSource(pointId)) map.removeSource(pointId);
+      }, 5000);
       return;
     }
-    geojson.geometry.coordinates.push(coordinates[step]);
-    (map.getSource(routeId) as any).setData(geojson);
+
+    routeGeojson.geometry.coordinates.push(coordinates[step]);
+    pointGeojson.features[0].geometry.coordinates = coordinates[step];
+    
+    if (map.getSource(routeId)) (map.getSource(routeId) as any).setData(routeGeojson);
+    if (map.getSource(pointId)) (map.getSource(pointId) as any).setData(pointGeojson);
+    
     step++;
     requestAnimationFrame(animate);
   }

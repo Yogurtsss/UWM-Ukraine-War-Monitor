@@ -185,12 +185,22 @@ export default function Home() {
       if (resp.ok) {
         const data = await resp.json();
         const incoming: UWMEvent[] = Array.isArray(data) ? data : (data.events ?? []);
-        setEvents(incoming);
+        
+        // Filter air alerts to 15 mins
+        const now = Date.now();
+        const filtered = incoming.filter(ev => {
+          if (ev.type === "air_alert") {
+            const ts = ev.timestamp ? new Date(ev.timestamp).getTime() : now;
+            return (now - ts) < (15 * 60 * 1000);
+          }
+          return true;
+        });
+
+        setEvents(filtered);
         setWsStatus("live"); 
       }
     } catch (err) {
       console.error("Polling error:", err);
-      // Actual server failure/network issue
       setWsStatus("offline");
     }
   }, []);
