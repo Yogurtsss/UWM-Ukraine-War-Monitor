@@ -57,12 +57,21 @@ export default function Home() {
     );
   };
 
+  const [satViewUrl, setSatViewUrl] = useState<string | null>(null);
+
   useEffect(() => {
+    (window as any).openSatView = (src: string) => {
+      setSatViewUrl(src);
+      setIsSatModalOpen(true);
+    };
     const handleSatModal = (e: any) => {
       setIsSatModalOpen(e.detail.isOpen);
     };
     window.addEventListener('uwm:sat-modal' as any, handleSatModal);
-    return () => window.removeEventListener('uwm:sat-modal' as any, handleSatModal);
+    return () => {
+      delete (window as any).openSatView;
+      window.removeEventListener('uwm:sat-modal' as any, handleSatModal);
+    };
   }, []);
 
   const UI_STRINGS = {
@@ -549,7 +558,7 @@ export default function Home() {
       </section>
 
       {/* SECTION C: LEGEND OVERLAY */}
-      <div className="fixed bottom-[240px] right-[20px] z-40 glass-panel p-2 rounded-lg flex flex-col gap-2 shadow-xl border border-white/10 transition-all duration-500">
+      <div className={`fixed bottom-[240px] right-[20px] z-40 glass-panel p-2 rounded-lg flex flex-col gap-2 shadow-xl border border-white/10 transition-all duration-500 ${isSatModalOpen ? 'opacity-0 pointer-events-none' : ''}`}>
         <h4 className="mono text-[8px] font-bold text-gray-500 uppercase tracking-tighter">{t.legend}</h4>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
@@ -570,6 +579,45 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* SATELLITE IMAGE Fullscreen Overlay Modal */}
+      {isSatModalOpen && satViewUrl && (
+        <div className="fixed inset-0 z-[150] flex flex-col items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-sm pointer-events-auto">
+          <div className="relative w-full max-w-[1000px] aspect-video border border-blue-500/30 rounded shadow-[0_0_50px_rgba(59,130,246,0.3)] bg-black overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+            <div className="p-3 border-b border-white/5 flex justify-between items-center bg-[#0b0d11]">
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                <span className="mono text-[11px] font-bold text-blue-400 tracking-widest leading-none">SATCOM UPLINK // HIGH-RES SATELLITE FEED</span>
+              </div>
+              <button 
+                onClick={() => { setIsSatModalOpen(false); setSatViewUrl(null); }}
+                className="mono text-[11px] font-bold text-gray-500 hover:text-white px-2 tracking-widest border border-gray-800 hover:border-gray-500 rounded py-1 transition-colors"
+               >
+                [ CLOSE ]
+              </button>
+            </div>
+            <div className="flex-grow w-full relative group">
+              <img 
+                src={satViewUrl.replace('&size=400,200', '&size=1000,600')} 
+                className="w-full h-full object-cover filter brightness-110 contrast-125" 
+                alt="Enlarged Sat View" 
+              />
+              <div className="absolute inset-0 scanline-overlay opacity-30 pointer-events-none"></div>
+              {/* Target reticle HUD */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000">
+                 <Crosshair size={60} className="text-blue-500/80 animate-pulse" />
+              </div>
+              <div className="absolute top-6 left-6 border-l-[3px] border-t-[3px] border-blue-500 w-12 h-12 opacity-60 pointer-events-none"></div>
+              <div className="absolute bottom-6 right-6 border-r-[3px] border-b-[3px] border-blue-500 w-12 h-12 opacity-60 pointer-events-none"></div>
+              
+              <div className="absolute bottom-4 left-4 bg-black/80 px-4 py-2 border border-blue-500/30 rounded backdrop-blur-md pointer-events-none">
+                 <span className="mono text-[10px] text-blue-400 font-bold block uppercase tracking-widest">Target Acquisition Mode</span>
+                 <span className="mono text-[8px] text-gray-400 block mt-1 tracking-widest uppercase">Echelon-9 Encryption / Secure Feed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* FOOTER - TACTICAL TICKER */}
       <footer className="fixed bottom-0 left-0 w-full z-50 flex items-center px-4 overflow-hidden bg-black/90 backdrop-blur-md border-t border-white/5 h-[32px] gap-6">
