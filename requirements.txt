@@ -4,3 +4,12 @@ python-multipart
 websockets
 python-dotenv
 httpx
+aiohttp
+deep-translator
+langchain-core
+langchain-groq
+langchain-openai
+langchain-anthropic
+beautifulsoup4
+pydantic
+
