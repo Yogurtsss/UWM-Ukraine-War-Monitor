@@ -108,7 +108,31 @@ async def get_events():
 
 @app.get("/api/map/frontline.json")
 async def get_frontline():
-    """Returns the cached frontline GeoJSON, preventing 404s and proxy issues."""
+    """Returns frontline GeoJSON. Falls back to live DeepState API if cache is empty (cold start)."""
+    global frontline_cache
+    
+    # If cache is empty (cold start on Vercel), fetch directly from DeepState
+    if not frontline_cache.get("features"):
+        logger.info("[Frontline] Cache empty (cold start). Fetching live from DeepState API...")
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.get(
+                    "https://deepstatemap.live/api/history/last",
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    geojson = data.get("map", {})
+                    if geojson.get("features"):
+                        frontline_cache = geojson
+                        logger.info(f"[Frontline] Live fetch OK – {len(geojson.get('features', []))} features cached.")
+                    else:
+                        logger.warning("[Frontline] DeepState API returned empty map data.")
+                else:
+                    logger.error(f"[Frontline] DeepState API returned {resp.status_code}")
+        except Exception as e:
+            logger.error(f"[Frontline] Live fetch failed: {e}")
+    
     return frontline_cache
 
 @app.get("/api/stats/missiles")

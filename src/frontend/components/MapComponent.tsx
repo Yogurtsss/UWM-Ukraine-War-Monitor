@@ -102,6 +102,71 @@ export default function MapComponent({ activeLayers, events, lang = 'en' }: MapP
         }
       });
 
+      // ── Frontline Retry Logic (Vercel Cold Start Fix) ──
+      // MapLibre fetches the GeoJSON once on addSource, but if Vercel's
+      // serverless function cold-started, it may return an empty FeatureCollection.
+      // We retry with increasing delays, and fall back to DeepState's public API.
+      const DEEPSTATE_DIRECT_URL = "https://deepstatemap.live/api/history/last";
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryDelays = [3000, 6000, 10000]; // 3s, 6s, 10s
+
+      const checkAndRetryFrontline = () => {
+        const src = map.getSource("frontline") as any;
+        if (!src || !src._data) return;
+
+        // Check if the current data has features
+        const checkData = () => {
+          try {
+            // Fetch the current state from our proxy
+            fetch(FRONTLINE_GEOJSON_URL)
+              .then(r => r.json())
+              .then(data => {
+                const features = data?.features || [];
+                if (features.length > 0) {
+                  // Data is good, update the source
+                  src.setData(data);
+                  console.log(`[UWM] Frontline loaded: ${features.length} features`);
+                  return;
+                }
+
+                // Still empty — retry or try direct API
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                  console.log(`[UWM] Frontline empty, retry ${retryCount}/${maxRetries} in ${retryDelays[retryCount - 1]}ms...`);
+                  setTimeout(checkData, retryDelays[retryCount - 1]);
+                } else {
+                  // Final fallback: fetch directly from DeepState
+                  console.log("[UWM] Proxy exhausted. Fetching directly from DeepState API...");
+                  fetch(DEEPSTATE_DIRECT_URL)
+                    .then(r => r.json())
+                    .then(dsData => {
+                      const geojson = dsData?.map || {};
+                      if (geojson.features?.length) {
+                        src.setData(geojson);
+                        console.log(`[UWM] DeepState direct OK: ${geojson.features.length} features`);
+                      }
+                    })
+                    .catch(err => console.error("[UWM] DeepState direct fetch failed:", err));
+                }
+              })
+              .catch(() => {
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                  setTimeout(checkData, retryDelays[retryCount - 1]);
+                }
+              });
+          } catch (e) {
+            console.error("[UWM] Frontline check error:", e);
+          }
+        };
+
+        // Initial check after a short delay to let the first load complete
+        setTimeout(checkData, 2000);
+      };
+
+      checkAndRetryFrontline();
+
       // 106-118: Click handler with lang support
       map.on("click", "frontline-fill", (e) => {
         if (!e.features?.length) return;
